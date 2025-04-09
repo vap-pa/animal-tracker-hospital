@@ -23,7 +23,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import {
   fetchAnimals,
-  deleteAnimal,
+  
 } from '../services/api';
 
 const statusColors = {
