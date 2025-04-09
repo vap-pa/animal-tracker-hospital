@@ -10,11 +10,11 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  CircularProgress,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle
+  CircularProgress
+//   Dialog,
+//   DialogActions,
+//   DialogContent,
+//   DialogTitle
 } from '@mui/material';
 import { fetchAppointmentById, updateAppointment, fetchAnimals, fetchStaff } from '../services/api';
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';

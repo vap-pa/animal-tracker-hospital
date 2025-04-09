@@ -219,7 +219,7 @@ const Animals = () => {
   const [searchParams, setSearchParams] = useState({});
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [animalToDelete, setAnimalToDelete] = useState(null);
-  const navigate = useNavigate();
+  // const navigate = useNavigate();
 
   useEffect(() => {
     const loadAnimals = async () => {
