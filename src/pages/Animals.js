@@ -67,14 +67,14 @@ const Animals = () => {
     setSearchParams(params);
   };
 
-  const handleDelete = async (id) => {
-    try {
-      await deleteAnimal(id);
-      setAnimals(animals.filter(animal => animal.id !== id));
-    } catch (error) {
-      console.error('Failed to delete animal:', error);
-    }
-  };
+  // const handleDelete = async (id) => {
+  //   try {
+  //     await deleteAnimal(id);
+  //     setAnimals(animals.filter(animal => animal.id !== id));
+  //   } catch (error) {
+  //     console.error('Failed to delete animal:', error);
+  //   }
+  // };
 
   return (
     <Container maxWidth="lg">
