@@ -119,6 +119,15 @@ export const fetchMedicalRecords = async (params = {}) => {
     throw error;
   }
 };
+export const fetchMedicalRecordById = async (id) => {
+  try {
+    const response = await api.get(`/medical-records/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching medical record by ID:', error);
+    throw error;
+  }
+};
 
 export const fetchMedicalRecordsByAnimalId = async (animalId) => {
   try {

@@ -7,6 +7,14 @@ import Navbar from './components/Navbar';
 import Home from './pages/Home';
 import Animals from './pages/Animals';
 import AnimalDetail from './pages/AnimalDetail';
+import EditAnimalForm from './pages/EditAnimalForm';
+import EditAppointmentForm from './pages/EditAppointmentForm';
+import EditMedicalRecordForm from './pages/EditMedicalRecordForm';
+import EditStaffForm from './pages/EditStaffForm';
+
+
+
+
 import Appointments from './pages/Appointments';
 import MedicalRecords from './pages/MedicalRecords';
 import Staff from './pages/Staff';
@@ -48,17 +56,17 @@ function App() {
   <Route path="/animals" element={<Animals />} />
   <Route path="/animals/new" element={<AddAnimalForm />} />
   <Route path="/animals/:id" element={<AnimalDetail />} />
-  {/* <Route path="/animals/:id/edit" element={<EditAnimalForm />} /> */}
+  <Route path="/animals/edit/:id" element={<EditAnimalForm />} />
   <Route path="/animals/:id/medical/add" element={<AddMedicalRecordForm />} />
   <Route path="/appointments" element={<Appointments />} />
   <Route path="/appointments/new" element={<AddAppointmentForm />} />
-  {/* <Route path="/appointments/:id/edit" element={<EditAppointmentForm />} /> */}
+  <Route path="/appointments/:id/edit" element={<EditAppointmentForm />} />
   <Route path="/medical-records" element={<MedicalRecords />} />
   <Route path="/medical-records/new" element={<AddMedicalRecordForm />} />
-  {/* <Route path="/medical-records/:id/edit" element={<EditMedicalRecordForm />} /> */}
+  <Route path="/medical-records/:id/edit" element={<EditMedicalRecordForm />} />
   <Route path="/staff" element={<Staff />} />
   <Route path="/staff/new" element={<AddStaffForm />} />
-  {/* <Route path="/staff/:id/edit" element={<EditStaffForm />} /> */}
+  <Route path="/staff/:id/edit" element={<EditStaffForm />} />
   <Route path="/reports" element={<Reports />} />
                 {/* <Route path="/" element={<Home />} />
                 <Route path="/animals" element={<Animals />} />
