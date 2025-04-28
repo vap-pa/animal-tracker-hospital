@@ -41,6 +41,8 @@ const Staff = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterRole, setFilterRole] = useState('');
   const [openDialog, setOpenDialog] = useState(false);
+  const [page, setPage] = useState(1);
+  const pageSize = 10;
 
   useEffect(() => {
     const loadStaff = async () => {
@@ -67,6 +69,9 @@ const Staff = () => {
       console.error('Failed to deactivate staff:', error);
     }
   };
+
+  const paginatedStaff = staffMembers.slice((page - 1) * pageSize, page * pageSize);
+  const totalPages = Math.ceil(staffMembers.length / pageSize);
 
   return (
     <Container maxWidth="lg">
@@ -116,58 +121,65 @@ const Staff = () => {
             <CircularProgress />
           </Box>
         ) : (
-          <TableContainer component={Paper}>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>Staff Member</TableCell>
-                  <TableCell>Role</TableCell>
-                  <TableCell>Specialization</TableCell>
-                  <TableCell>Contact</TableCell>
-                  <TableCell>Joined</TableCell>
-                  <TableCell align="right">Actions</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {staffMembers.map((staff) => (
-                  <TableRow key={staff.id}>
-                    <TableCell>
-                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        <Avatar sx={{ mr: 2, bgcolor: 'primary.main' }}>
-                          <PersonIcon />
-                        </Avatar>
-                        {staff.firstName} {staff.lastName}
-                      </Box>
-                    </TableCell>
-                    <TableCell>{staff.role}</TableCell>
-                    <TableCell>{staff.specialization}</TableCell>
-                    <TableCell>
-                      <Box>
-                        <div>{staff.email}</div>
-                        <div>{staff.phone}</div>
-                      </Box>
-                    </TableCell>
-                    <TableCell>{new Date(staff.hireDate).toLocaleDateString()}</TableCell>
-                    <TableCell align="right">
-                      <IconButton
-                        component={Link}
-                        to={`/staff/${staff.id}/edit`}
-                        color="primary"
-                      >
-                        <EditIcon />
-                      </IconButton>
-                      <IconButton 
-                        color="error"
-                        onClick={() => handleDeactivate(staff.id)}
-                      >
-                        <DeleteIcon />
-                      </IconButton>
-                    </TableCell>
+          <>
+            <TableContainer component={Paper}>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Staff Member</TableCell>
+                    <TableCell>Role</TableCell>
+                    <TableCell>Specialization</TableCell>
+                    <TableCell>Contact</TableCell>
+                    <TableCell>Joined</TableCell>
+                    <TableCell align="right">Actions</TableCell>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
+                </TableHead>
+                <TableBody>
+                  {paginatedStaff.map((staff) => (
+                    <TableRow key={staff.id}>
+                      <TableCell>
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                          <Avatar sx={{ mr: 2, bgcolor: 'primary.main' }}>
+                            <PersonIcon />
+                          </Avatar>
+                          {staff.firstName} {staff.lastName}
+                        </Box>
+                      </TableCell>
+                      <TableCell>{staff.role}</TableCell>
+                      <TableCell>{staff.specialization}</TableCell>
+                      <TableCell>
+                        <Box>
+                          <div>{staff.email}</div>
+                          <div>{staff.phone}</div>
+                        </Box>
+                      </TableCell>
+                      <TableCell>{new Date(staff.hireDate).toLocaleDateString()}</TableCell>
+                      <TableCell align="right">
+                        <IconButton
+                          component={Link}
+                          to={`/staff/${staff.id}/edit`}
+                          color="primary"
+                        >
+                          <EditIcon />
+                        </IconButton>
+                        <IconButton 
+                          color="error"
+                          onClick={() => handleDeactivate(staff.id)}
+                        >
+                          <DeleteIcon />
+                        </IconButton>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+            <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
+              <Button onClick={() => setPage(page - 1)} disabled={page === 1} sx={{ mr: 2 }}>Previous</Button>
+              <Typography sx={{ mt: 1 }}>{page} / {totalPages || 1}</Typography>
+              <Button onClick={() => setPage(page + 1)} disabled={page === totalPages || totalPages === 0} sx={{ ml: 2 }}>Next</Button>
+            </Box>
+          </>
         )}
       </Box>
 

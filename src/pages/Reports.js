@@ -286,7 +286,7 @@ const Reports = () => {
           <Grid item xs={12} sm={6} md={3}>
             <Paper elevation={3} sx={{ p: 2, textAlign: 'center' }}>
               <PetsIcon color="primary" sx={{ fontSize: 40 }} />
-              <Typography variant="h5">{stats.animals}</Typography>
+              <Typography variant="h5">{stats?.animals ?? 0}</Typography>
               <Typography variant="subtitle1">Animals in Care</Typography>
             </Paper>
           </Grid>

@@ -13,10 +13,11 @@ const api = axios.create({
 export const fetchAnimals = async (params = {}) => {
   try {
     const response = await api.get('/animals', { params });
-    return response.data;
+    // Ensure we always return an array
+    return Array.isArray(response.data) ? response.data : [];
   } catch (error) {
     console.error('Error fetching animals:', error);
-    throw error;
+    return [];
   }
 };
 

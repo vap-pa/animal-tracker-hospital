@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
@@ -11,10 +10,6 @@ import EditAnimalForm from './pages/EditAnimalForm';
 import EditAppointmentForm from './pages/EditAppointmentForm';
 import EditMedicalRecordForm from './pages/EditMedicalRecordForm';
 import EditStaffForm from './pages/EditStaffForm';
-
-
-
-
 import Appointments from './pages/Appointments';
 import MedicalRecords from './pages/MedicalRecords';
 import Staff from './pages/Staff';
@@ -25,6 +20,10 @@ import AddAnimalForm from './components/AddAnimalForm';
 import AddAppointmentForm from './components/AddAppointmentForm';
 import AddMedicalRecordForm from './components/AddMedicalRecordForm';
 import AddStaffForm from './components/AddStaffForm';
+import Login from './pages/Login';
+import Register from './pages/Register';
+import { AuthProvider } from './context/AuthContext';
+
 const theme = createTheme({
   palette: {
     primary: {
@@ -47,39 +46,36 @@ function App() {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <ErrorBoundary>
-        <Router>
-          <div className="app">
-            <Navbar />
-            <main className="main-content">
-              <Routes>
-              <Route path="/" element={<Home />} />
-  <Route path="/animals" element={<Animals />} />
-  <Route path="/animals/new" element={<AddAnimalForm />} />
-  <Route path="/animals/:id" element={<AnimalDetail />} />
-  <Route path="/animals/edit/:id" element={<EditAnimalForm />} />
-  <Route path="/animals/:id/medical/add" element={<AddMedicalRecordForm />} />
-  <Route path="/appointments" element={<Appointments />} />
-  <Route path="/appointments/new" element={<AddAppointmentForm />} />
-  <Route path="/appointments/:id/edit" element={<EditAppointmentForm />} />
-  <Route path="/medical-records" element={<MedicalRecords />} />
-  <Route path="/medical-records/new" element={<AddMedicalRecordForm />} />
-  <Route path="/medical-records/:id/edit" element={<EditMedicalRecordForm />} />
-  <Route path="/staff" element={<Staff />} />
-  <Route path="/staff/new" element={<AddStaffForm />} />
-  <Route path="/staff/:id/edit" element={<EditStaffForm />} />
-  <Route path="/reports" element={<Reports />} />
-                {/* <Route path="/" element={<Home />} />
-                <Route path="/animals" element={<Animals />} />
-                <Route path="/animals/:id" element={<AnimalDetail />} />
-                <Route path="/appointments" element={<Appointments />} />
-                <Route path="/medical-records" element={<MedicalRecords />} />
-                <Route path="/staff" element={<Staff />} />
-                <Route path="/reports" element={<Reports />} /> */}
-              </Routes>
-            </main>
-            <Footer />
-          </div>
-        </Router>
+        <AuthProvider>
+          <Router>
+            <div className="app">
+              <Navbar />
+              <main className="main-content">
+                <Routes>
+                  <Route path="/" element={<Home />} />
+                  <Route path="/animals" element={<Animals />} />
+                  <Route path="/animals/new" element={<AddAnimalForm />} />
+                  <Route path="/animals/:id" element={<AnimalDetail />} />
+                  <Route path="/animals/edit/:id" element={<EditAnimalForm />} />
+                  <Route path="/animals/:id/medical/add" element={<AddMedicalRecordForm />} />
+                  <Route path="/appointments" element={<Appointments />} />
+                  <Route path="/appointments/new" element={<AddAppointmentForm />} />
+                  <Route path="/appointments/:id/edit" element={<EditAppointmentForm />} />
+                  <Route path="/medical-records" element={<MedicalRecords />} />
+                  <Route path="/medical-records/new" element={<AddMedicalRecordForm />} />
+                  <Route path="/medical-records/:id/edit" element={<EditMedicalRecordForm />} />
+                  <Route path="/staff" element={<Staff />} />
+                  <Route path="/staff/new" element={<AddStaffForm />} />
+                  <Route path="/staff/:id/edit" element={<EditStaffForm />} />
+                  <Route path="/reports" element={<Reports />} />
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/register" element={<Register />} />
+                </Routes>
+              </main>
+              <Footer />
+            </div>
+          </Router>
+        </AuthProvider>
       </ErrorBoundary>
     </ThemeProvider>
   );

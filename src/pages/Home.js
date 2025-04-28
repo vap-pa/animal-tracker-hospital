@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { 
   Box, Container, Typography, Button, Grid, Paper, CircularProgress, 
   useTheme, Avatar, Divider, Chip, LinearProgress, Table, TableBody, 
-  TableCell, TableContainer,  TableRow
+  TableCell, TableContainer, TableRow, Card, CardContent, CardMedia,
+  useMediaQuery
 } from '@mui/material';
 import { Link } from 'react-router-dom';
 import {
@@ -17,6 +18,8 @@ import {
   Favorite as FavoriteIcon,
   Warning as WarningIcon,
   CheckCircle as CheckCircleIcon,
+  TrendingUp as TrendingUpIcon,
+  Emergency as EmergencyIcon,
 } from '@mui/icons-material';
 import {
   fetchAnimals,
@@ -24,6 +27,7 @@ import {
   fetchMedicalRecords,
   fetchStaff,
 } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 
 // Import images
 import heroImage from '../assets/hero-animals.jpg';
@@ -33,6 +37,109 @@ import appointmentsImg from '../assets/appointments.jpg';
 import staffImg from '../assets/staff.jpg';
 import reportImg from '../assets/reports-analytics.jpg';
 import emergencyImg from '../assets/emergency-cases.jpg';
+
+const StatisticCard = ({ title, value, icon, color, trend }) => (
+  <Card sx={{ 
+    height: '100%',
+    display: 'flex',
+    flexDirection: 'column',
+    background: `linear-gradient(135deg, ${color}15, ${color}05)`,
+    border: `1px solid ${color}30`,
+    transition: 'transform 0.3s, box-shadow 0.3s',
+    '&:hover': {
+      transform: 'translateY(-4px)',
+      boxShadow: 6
+    }
+  }}>
+    <CardContent>
+      <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+        <Avatar sx={{ bgcolor: color, mr: 2 }}>{icon}</Avatar>
+        <Typography variant="h6" sx={{ flex: 1 }}>{title}</Typography>
+        {trend && (
+          <Box sx={{ display: 'flex', alignItems: 'center', color: trend > 0 ? 'success.main' : 'error.main' }}>
+            <TrendingUpIcon sx={{ transform: trend > 0 ? 'none' : 'rotate(180deg)' }} />
+            <Typography variant="body2">{Math.abs(trend)}%</Typography>
+          </Box>
+        )}
+      </Box>
+      <Typography variant="h4" sx={{ fontWeight: 'bold' }}>{value}</Typography>
+    </CardContent>
+  </Card>
+);
+
+const EmergencyCaseCard = ({ case: emergencyCase }) => (
+  <Card sx={{ 
+    mb: 2,
+    backgroundColor: '#fff4f4',
+    borderLeft: '4px solid #ff1744',
+    transition: 'transform 0.3s',
+    '&:hover': {
+      transform: 'translateX(4px)'
+    }
+  }}>
+    <CardContent>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+        <Avatar sx={{ bgcolor: '#ff1744' }}>
+          <EmergencyIcon />
+        </Avatar>
+        <Box sx={{ flex: 1 }}>
+          <Typography variant="h6">{emergencyCase.name} ({emergencyCase.type})</Typography>
+          <Typography variant="body2" color="text.secondary">
+            Under care of {emergencyCase.vet} - {emergencyCase.time}
+          </Typography>
+        </Box>
+        <Chip 
+          label={emergencyCase.condition}
+          color="error"
+          size="small"
+        />
+      </Box>
+    </CardContent>
+  </Card>
+);
+
+const FeatureCard = ({ icon, image, title, description, link, color }) => (
+  <Card sx={{ 
+    height: '100%',
+    display: 'flex',
+    flexDirection: 'column',
+    transition: 'transform 0.3s, box-shadow 0.3s',
+    '&:hover': {
+      transform: 'translateY(-4px)',
+      boxShadow: 6
+    }
+  }}>
+    <CardMedia
+      component="img"
+      height="140"
+      image={image}
+      alt={title}
+    />
+    <CardContent sx={{ flexGrow: 1 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+        <Avatar sx={{ bgcolor: color, mr: 2 }}>{icon}</Avatar>
+        <Typography variant="h6">{title}</Typography>
+      </Box>
+      <Typography variant="body2" color="text.secondary" paragraph>
+        {description}
+      </Typography>
+      <Button
+        component={Link}
+        to={link}
+        variant="contained"
+        sx={{ 
+          backgroundColor: color,
+          '&:hover': {
+            backgroundColor: color,
+            opacity: 0.9
+          }
+        }}
+      >
+        Learn More
+      </Button>
+    </CardContent>
+  </Card>
+);
 
 const Home = () => {
   const [stats, setStats] = useState(null);
@@ -46,6 +153,8 @@ const Home = () => {
     healthyPercentage: 0
   });
   const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const { user } = useAuth();
 
   useEffect(() => {
     const loadData = async () => {
@@ -63,7 +172,25 @@ const Home = () => {
           fetchStaff({ active: true }),
         ]);
 
-        // Mock data for recent activities and tasks since these API endpoints don't exist
+        // Calculate statistics
+        const criticalCount = medicalRecords.filter(r => r.status === 'Critical').length;
+        const observationCount = medicalRecords.filter(r => r.status === 'Under Observation').length;
+        const healthyCount = animals.length - criticalCount - observationCount;
+        const healthyPercentage = Math.round((healthyCount / animals.length) * 100);
+
+        setStats({
+          animals: animals.length,
+          appointments: appointments.length,
+          medicalRecords: medicalRecords.length,
+          staff: staff.length,
+          emergencyCases: appointments.filter(a => a.status === 'Emergency').length,
+          healthyAnimals: healthyCount,
+          underObservation: observationCount,
+          criticalCases: criticalCount,
+          healthyPercentage
+        });
+
+        // Mock data for recent activities and tasks
         const mockRecentActivities = [
           { type: 'Medical', description: 'Annual checkup for Max', time: '2 hours ago', animal: 'Max (Dog)' },
           { type: 'Appointment', description: 'Vaccination scheduled', time: '4 hours ago', animal: 'Bella (Cat)' },
@@ -76,18 +203,6 @@ const Home = () => {
           { description: 'Monthly report', dueDate: 'End of week', priority: 'High' },
         ];
 
-        // Calculate animal status based on medical records
-        const criticalCount = medicalRecords.filter(r => r.status === 'Critical').length;
-        const observationCount = medicalRecords.filter(r => r.status === 'Under Observation').length;
-        const healthyCount = animals.length - criticalCount - observationCount;
-        const healthyPercentage = Math.round((healthyCount / animals.length) * 100);
-
-        setStats({
-          animals: animals.length,
-          appointments: appointments.length,
-          medicalRecords: medicalRecords.length,
-          staff: staff.length,
-        });
         setRecentActivities(mockRecentActivities);
         setUpcomingTasks(mockUpcomingTasks);
         setAnimalStatus({
@@ -185,526 +300,164 @@ const Home = () => {
       >
         <Container maxWidth="lg">
           <Box sx={{ textAlign: 'center', py: 8 }}>
-            <Typography variant="h2" component="h1" gutterBottom sx={{ fontWeight: 700, textShadow: '2px 2px 4px rgba(0,0,0,0.5)' }}>
-              Animal Care Management System
+            <Typography variant="h2" component="h1" gutterBottom sx={{ 
+              fontWeight: 700, 
+              textShadow: '2px 2px 4px rgba(0,0,0,0.5)',
+              fontSize: { xs: '2.5rem', md: '3.5rem' }
+            }}>
+              Welcome to Animal Tracker & Hospital
             </Typography>
-            <Typography variant="h5" component="h2" gutterBottom sx={{ mb: 4, textShadow: '1px 1px 2px rgba(0,0,0,0.5)' }}>
-              Comprehensive care tracking for all your animals
+            <Typography variant="h5" component="h2" gutterBottom sx={{ 
+              mb: 4, 
+              textShadow: '1px 1px 2px rgba(0,0,0,0.5)',
+              fontSize: { xs: '1.1rem', md: '1.5rem' }
+            }}>
+              Comprehensive care tracking for all your animals. Register or log in to get started!
             </Typography>
-            {stats && (
-              <Box sx={{ 
-                display: 'flex', 
-                justifyContent: 'center', 
-                gap: 4,
-                flexWrap: 'wrap',
-                mb: 4 
-              }}>
-                <StatBadge value={stats.animals} label="Animals" icon={<PetsIcon />} />
-                <StatBadge value={stats.appointments} label="Appointments" icon={<ScheduleIcon />} />
-                <StatBadge value={stats.medicalRecords} label="Records" icon={<MedicalServicesIcon />} />
-                <StatBadge value={stats.staff} label="Staff" icon={<PeopleIcon />} />
-              </Box>
-            )}
-            <Box sx={{ display: 'flex', gap: 3, justifyContent: 'center' }}>
-              <Button
-                variant="contained"
-                size="large"
-                component={Link}
-                to="/animals"
-                sx={{ 
-                  px: 6,
-                  py: 1.5,
-                  fontSize: '1.1rem',
-                  fontWeight: 600,
-                  borderRadius: '50px',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
-                  '&:hover': {
-                    transform: 'translateY(-2px)',
-                    boxShadow: '0 6px 16px rgba(0,0,0,0.3)',
-                  },
-                  transition: 'all 0.3s ease',
-                }}
-              >
-                View Animals
-              </Button>
-              <Button
-                variant="outlined"
-                size="large"
-                component={Link}
-                to="/appointments"
-                sx={{ 
-                  px: 6,
-                  py: 1.5,
-                  fontSize: '1.1rem',
-                  fontWeight: 600,
-                  borderRadius: '50px',
-                  borderWidth: '2px',
-                  color: 'white',
-                  borderColor: 'white',
-                  '&:hover': {
-                    transform: 'translateY(-2px)',
-                    borderWidth: '2px',
-                    borderColor: 'white',
-                    backgroundColor: 'rgba(255,255,255,0.1)',
-                  },
-                  transition: 'all 0.3s ease',
-                }}
-              >
-                Schedule Appointment
-              </Button>
-            </Box>
+            <Button component={Link} to="/register" variant="contained" color="primary" size="large" sx={{ mr: 2 }}>
+              Get Started
+            </Button>
+            <Button component={Link} to="/login" variant="outlined" color="inherit" size="large">
+              Login
+            </Button>
           </Box>
         </Container>
       </Box>
-
-      {/* Main Content */}
-      <Container maxWidth="xl">
-        {/* Features Section */}
-        <SectionHeader 
-          title="Core Features" 
-          subtitle="Everything you need to manage animal care"
-          icon={<ChartIcon color="primary" />}
-        />
-        
-        <Grid container spacing={4} sx={{ mb: 8 }}>
-          {features.map((feature, index) => (
-            <Grid item xs={12} sm={6} md={3} key={index}>
-              <FeatureCard 
-                icon={feature.icon}
-                image={feature.image}
-                title={feature.title}
-                description={feature.description}
-                link={feature.link}
-                color={feature.color}
-              />
-            </Grid>
-          ))}
-        </Grid>
-
-        {/* Dashboard Overview */}
-        <SectionHeader 
-          title="Dashboard Overview" 
-          subtitle="Quick insights and analytics"
-          icon={<ChartIcon color="primary" />}
-        />
-        
-        <Grid container spacing={4} sx={{ mb: 8 }}>
-          <Grid item xs={12} md={8}>
-            <Paper elevation={3} sx={{ p: 3, height: '100%', borderRadius: '12px' }}>
-              <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
-                Animal Health Status
-              </Typography>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                <Box sx={{ width: '100%', mr: 1 }}>
-                  <LinearProgress 
-                    variant="determinate" 
-                    value={animalStatus.healthyPercentage || 0} 
-                    color="success"
-                    sx={{ height: 10, borderRadius: 5 }}
-                  />
-                </Box>
-                <Typography variant="body2" color="text.secondary">
-                  {`${animalStatus.healthyPercentage || 0}% Healthy`}
-                </Typography>
-              </Box>
-              <Grid container spacing={2}>
-                <Grid item xs={4}>
-                  <StatusIndicator 
-                    value={animalStatus.healthy || 0} 
-                    label="Healthy" 
-                    icon={<CheckCircleIcon color="success" />} 
-                  />
-                </Grid>
-                <Grid item xs={4}>
-                  <StatusIndicator 
-                    value={animalStatus.underObservation || 0} 
-                    label="Observation" 
-                    icon={<WarningIcon color="warning" />} 
-                  />
-                </Grid>
-                <Grid item xs={4}>
-                  <StatusIndicator 
-                    value={animalStatus.critical || 0} 
-                    label="Critical" 
-                    icon={<HospitalIcon color="error" />} 
-                  />
-                </Grid>
-              </Grid>
-              <Divider sx={{ my: 3 }} />
-              <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
-                Recent Activities
-              </Typography>
-              <TableContainer>
-                <Table size="small">
-                  <TableBody>
-                    {recentActivities.map((activity, index) => (
-                      <TableRow key={index}>
-                        <TableCell>
-                          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                            <Avatar sx={{ 
-                              bgcolor: activity.type === 'Medical' ? theme.palette.secondary.light : 
-                                      activity.type === 'Appointment' ? theme.palette.success.light : 
-                                      theme.palette.primary.light,
-                              mr: 2,
-                              width: 32,
-                              height: 32
-                            }}>
-                              {activity.type === 'Medical' ? <MedicalServicesIcon fontSize="small" /> :
-                               activity.type === 'Appointment' ? <ScheduleIcon fontSize="small" /> :
-                               <PetsIcon fontSize="small" />}
-                            </Avatar>
-                            <Box>
-                              <Typography variant="body1">{activity.description}</Typography>
-                              <Typography variant="caption" color="text.secondary">
-                                {activity.time} • {activity.animal}
-                              </Typography>
-                            </Box>
-                          </Box>
-                        </TableCell>
-                        <TableCell align="right">
-                          <Chip 
-                            label={activity.type} 
-                            size="small"
-                            sx={{ 
-                              backgroundColor: activity.type === 'Medical' ? theme.palette.secondary.light : 
-                                              activity.type === 'Appointment' ? theme.palette.success.light : 
-                                              theme.palette.primary.light,
-                            }}
-                          />
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            </Paper>
+      {/* Why Choose Us Section */}
+      <Container maxWidth="lg" sx={{ mb: 6 }}>
+        <Typography variant="h4" align="center" gutterBottom>Why Choose Us?</Typography>
+        <Grid container spacing={4} justifyContent="center">
+          <Grid item xs={12} sm={6} md={4}>
+            <Card sx={{ textAlign: 'center', p: 2 }}>
+              <CardContent>
+                <PetsIcon color="primary" sx={{ fontSize: 48 }} />
+                <Typography variant="h6" sx={{ mt: 2 }}>Expert Veterinary Care</Typography>
+                <Typography variant="body2" color="text.secondary">Our team of experienced veterinarians ensures the best care for your pets.</Typography>
+              </CardContent>
+            </Card>
           </Grid>
-          <Grid item xs={12} md={4}>
-            <Paper elevation={3} sx={{ p: 3, height: '100%', borderRadius: '12px' }}>
-              <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
-                Emergency Cases
-              </Typography>
-              {emergencyCases.map((caseItem, index) => (
-                <Box key={index} sx={{ 
-                  mb: 2, 
-                  p: 2, 
-                  borderRadius: '8px',
-                  backgroundColor: caseItem.condition === 'Critical' ? 
-                    theme.palette.error.light : theme.palette.warning.light
-                }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                      {caseItem.name} • {caseItem.type}
-                    </Typography>
-                    <Chip 
-                      label={caseItem.condition} 
-                      size="small"
-                      color={caseItem.condition === 'Critical' ? 'error' : 'warning'}
-                    />
-                  </Box>
-                  <Typography variant="body2" sx={{ mt: 1 }}>
-                    Assigned to: {caseItem.vet}
-                  </Typography>
-                  <Typography variant="caption" display="block" sx={{ mt: 1 }}>
-                    {caseItem.time}
-                  </Typography>
-                </Box>
-              ))}
-              <Divider sx={{ my: 3 }} />
-              <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
-                Upcoming Tasks
-              </Typography>
-              {upcomingTasks.map((task, index) => (
-                <Box key={index} sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                  <Avatar sx={{ 
-                    bgcolor: theme.palette.grey[200], 
-                    mr: 2,
-                    width: 32,
-                    height: 32
-                  }}>
-                    <EventIcon fontSize="small" color="action" />
-                  </Avatar>
-                  <Box sx={{ flexGrow: 1 }}>
-                    <Typography variant="body1">{task.description}</Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      Due: {task.dueDate}
-                    </Typography>
-                  </Box>
-                  <Chip 
-                    label={task.priority} 
-                    size="small"
-                    color={task.priority === 'High' ? 'error' : task.priority === 'Medium' ? 'warning' : 'default'}
-                  />
-                </Box>
-              ))}
-            </Paper>
+          <Grid item xs={12} sm={6} md={4}>
+            <Card sx={{ textAlign: 'center', p: 2 }}>
+              <CardContent>
+                <MedicalServicesIcon color="secondary" sx={{ fontSize: 48 }} />
+                <Typography variant="h6" sx={{ mt: 2 }}>Comprehensive Records</Typography>
+                <Typography variant="body2" color="text.secondary">Track medical history, appointments, and treatments all in one place.</Typography>
+              </CardContent>
+            </Card>
           </Grid>
-        </Grid>
-
-        {/* Reports & Analytics Section */}
-        <SectionHeader 
-          title="Reports & Analytics" 
-          subtitle="Track performance and generate insights"
-          icon={<ReportIcon color="primary" />}
-        />
-        
-        <Grid container spacing={4} sx={{ mb: 8 }}>
-          <Grid item xs={12} md={6}>
-            <Paper elevation={3} sx={{ p: 3, height: '100%', borderRadius: '12px' }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-                <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                  Monthly Appointments
-                </Typography>
-                <Button variant="outlined" size="small">
-                  View All
-                </Button>
-              </Box>
-              <Box sx={{ 
-                height: 300,
-                backgroundImage: `url(${reportImg})`,
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
-                borderRadius: '8px',
-                mb: 2
-              }} />
-              <Typography variant="body2" color="text.secondary">
-                Track appointment trends and staff workload over time
-              </Typography>
-            </Paper>
-          </Grid>
-          <Grid item xs={12} md={6}>
-            <Paper elevation={3} sx={{ p: 3, height: '100%', borderRadius: '12px' }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-                <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                  Medical Cases Overview
-                </Typography>
-                <Button variant="outlined" size="small">
-                  View All
-                </Button>
-              </Box>
-              <Box sx={{ 
-                height: 300,
-                backgroundImage: `url(${emergencyImg})`,
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
-                borderRadius: '8px',
-                mb: 2
-              }} />
-              <Typography variant="body2" color="text.secondary">
-                Common medical conditions and treatment statistics
-              </Typography>
-            </Paper>
-          </Grid>
-        </Grid>
-
-        {/* Quick Actions Section */}
-        <SectionHeader 
-          title="Quick Actions" 
-          subtitle="Get things done faster"
-          icon={<FavoriteIcon color="primary" />}
-        />
-        
-        <Grid container spacing={4} sx={{ mb: 8 }}>
-          <Grid item xs={12} sm={6} md={3}>
-            <QuickActionCard 
-              title="Add New Animal"
-              description="Register a new animal in the system"
-              icon={<PetsIcon />}
-              color={theme.palette.primary.main}
-              link="/animals/new"
-            />
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <QuickActionCard 
-              title="Create Appointment"
-              description="Schedule a new veterinary visit"
-              icon={<ScheduleIcon />}
-              color={theme.palette.success.main}
-              link="/appointments/new"
-            />
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <QuickActionCard 
-              title="Add Medical Record"
-              description="Document a treatment or procedure"
-              icon={<MedicalServicesIcon />}
-              color={theme.palette.secondary.main}
-              link="/medical-records/new"
-            />
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <QuickActionCard 
-              title="Generate Report"
-              description="Create custom reports and exports"
-              icon={<ReportIcon />}
-              color={theme.palette.warning.main}
-              link="/reports"
-            />
+          <Grid item xs={12} sm={6} md={4}>
+            <Card sx={{ textAlign: 'center', p: 2 }}>
+              <CardContent>
+                <ScheduleIcon color="success" sx={{ fontSize: 48 }} />
+                <Typography variant="h6" sx={{ mt: 2 }}>Easy Scheduling</Typography>
+                <Typography variant="body2" color="text.secondary">Book and manage appointments with just a few clicks.</Typography>
+              </CardContent>
+            </Card>
           </Grid>
         </Grid>
       </Container>
+      {/* Statistics Section */}
+      <Container maxWidth="lg" sx={{ mb: 6 }}>
+        <Grid container spacing={3}>
+          <Grid item xs={12} sm={6} md={3}>
+            <StatisticCard
+              title="Total Animals"
+              value={stats?.animals ?? 0}
+              icon={<PetsIcon />}
+              color={theme.palette.primary.main}
+              trend={5}
+            />
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <StatisticCard
+              title="Active Appointments"
+              value={stats?.appointments ?? 0}
+              icon={<ScheduleIcon />}
+              color={theme.palette.success.main}
+              trend={-2}
+            />
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <StatisticCard
+              title="Medical Records"
+              value={stats?.medicalRecords ?? 0}
+              icon={<MedicalServicesIcon />}
+              color={theme.palette.secondary.main}
+              trend={8}
+            />
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <StatisticCard
+              title="Staff Members"
+              value={stats?.staff ?? 0}
+              icon={<PeopleIcon />}
+              color={theme.palette.warning.main}
+              trend={0}
+            />
+          </Grid>
+        </Grid>
+        {user && user.role === 'ROLE_ADMIN' && (
+          <Box sx={{ mt: 4 }}>
+            <Typography variant="h6">Admin Management Links</Typography>
+            <Button component={Link} to="/animals" variant="contained" sx={{ mr: 2 }}>Manage Animals</Button>
+            <Button component={Link} to="/appointments" variant="contained" sx={{ mr: 2 }}>Manage Appointments</Button>
+            <Button component={Link} to="/medical-records" variant="contained" sx={{ mr: 2 }}>Manage Medical Records</Button>
+            <Button component={Link} to="/staff" variant="contained">Manage Staff</Button>
+          </Box>
+        )}
+        {user && user.role === 'ROLE_USER' && (
+          <Box sx={{ mt: 4 }}>
+            <Typography variant="h6">Your Animals</Typography>
+            <Button component={Link} to="/animals" variant="contained">View Your Animals</Button>
+          </Box>
+        )}
+      </Container>
+
+      {/* Emergency Cases Section */}
+      <Container maxWidth="lg" sx={{ mb: 6 }}>
+        <Typography variant="h5" gutterBottom sx={{ mb: 3 }}>
+          Emergency Cases
+        </Typography>
+        <Grid container spacing={3}>
+          {emergencyCases.map((emergencyCase) => (
+            <Grid item xs={12} md={6} key={emergencyCase.id}>
+              <EmergencyCaseCard case={emergencyCase} />
+            </Grid>
+          ))}
+        </Grid>
+      </Container>
+
+      {/* Features Section */}
+      <Container maxWidth="lg" sx={{ mb: 6 }}>
+        <Typography variant="h5" gutterBottom sx={{ mb: 3 }}>
+          Key Features
+        </Typography>
+        <Grid container spacing={3}>
+          {features.map((feature, index) => (
+            <Grid item xs={12} sm={6} md={3} key={index}>
+              <FeatureCard {...feature} />
+            </Grid>
+          ))}
+        </Grid>
+      </Container>
+      <Box sx={{ bgcolor: '#222', color: '#fff', py: 4, mt: 8 }} component="footer">
+        <Container maxWidth="lg">
+          <Grid container spacing={2}>
+            <Grid item xs={12} md={6}>
+              <Typography variant="h6">Animal Tracker & Hospital</Typography>
+              <Typography variant="body2" sx={{ mt: 1 }}>
+                Your trusted partner in animal care and management.
+              </Typography>
+            </Grid>
+            <Grid item xs={12} md={6} sx={{ textAlign: { xs: 'left', md: 'right' } }}>
+              <Typography variant="body2">Contact: info@animaltracker.com | +1 234 567 8901</Typography>
+              <Typography variant="body2" sx={{ mt: 1 }}>© {new Date().getFullYear()} Animal Tracker & Hospital. All rights reserved.</Typography>
+            </Grid>
+          </Grid>
+        </Container>
+      </Box>
     </Box>
   );
 };
-
-// Reusable Components
-const SectionHeader = ({ title, subtitle, icon }) => (
-  <Box sx={{ 
-    display: 'flex', 
-    alignItems: 'center', 
-    mb: 4,
-    '& svg': {
-      mr: 2,
-      fontSize: '2rem'
-    }
-  }}>
-    {icon}
-    <Box>
-      <Typography variant="h4" component="h2" sx={{ fontWeight: 700 }}>
-        {title}
-      </Typography>
-      <Typography variant="subtitle1" color="text.secondary">
-        {subtitle}
-      </Typography>
-    </Box>
-  </Box>
-);
-
-const StatBadge = ({ value, label, icon }) => (
-  <Box sx={{
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    backdropFilter: 'blur(5px)',
-    borderRadius: '16px',
-    padding: '16px 24px',
-    minWidth: '120px',
-  }}>
-    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-      {React.cloneElement(icon, { fontSize: 'medium' })}
-      <Typography variant="h4" component="div" sx={{ fontWeight: 700 }}>
-        {value}
-      </Typography>
-    </Box>
-    <Typography variant="subtitle2" sx={{ opacity: 0.9 }}>
-      {label}
-    </Typography>
-  </Box>
-);
-
-const FeatureCard = ({ icon, image, title, description, link, color }) => (
-  <Paper elevation={3} sx={{ 
-    height: '100%',
-    borderRadius: '12px',
-    overflow: 'hidden',
-    transition: 'transform 0.3s ease, box-shadow 0.3s ease',
-    '&:hover': {
-      transform: 'translateY(-8px)',
-      boxShadow: '0 10px 20px rgba(0,0,0,0.15)',
-    }
-  }}>
-    <Box sx={{ 
-      height: '140px',
-      backgroundImage: `url(${image})`,
-      backgroundSize: 'cover',
-      backgroundPosition: 'center',
-      position: 'relative',
-      '&::before': {
-        content: '""',
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        background: `linear-gradient(to bottom, rgba(0,0,0,0.1), ${color}`,
-        opacity: 0.7,
-      }
-    }}>
-      <Box sx={{
-        position: 'absolute',
-        top: '50%',
-        left: '50%',
-        transform: 'translate(-50%, -50%)',
-        color: 'white',
-        textAlign: 'center',
-      }}>
-        {React.cloneElement(icon, { sx: { fontSize: '3rem' } })}
-      </Box>
-    </Box>
-    <Box sx={{ p: 3 }}>
-      <Typography variant="h5" component="h3" gutterBottom sx={{ fontWeight: 600 }}>
-        {title}
-      </Typography>
-      <Typography variant="body1" sx={{ mb: 3, color: 'text.secondary' }}>
-        {description}
-      </Typography>
-      <Button
-        component={Link}
-        to={link}
-        variant="outlined"
-        size="small"
-        sx={{
-          borderColor: color,
-          color: color,
-          '&:hover': {
-            backgroundColor: color,
-            color: 'white',
-            borderColor: color,
-          },
-        }}
-      >
-        Explore
-      </Button>
-    </Box>
-  </Paper>
-);
-
-const StatusIndicator = ({ value, label, icon }) => (
-  <Box sx={{ textAlign: 'center', p: 2 }}>
-    <Typography variant="h4" sx={{ fontWeight: 700 }}>
-      {value}
-    </Typography>
-    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mt: 1 }}>
-      {icon}
-      <Typography variant="body2" sx={{ ml: 1 }}>
-        {label}
-      </Typography>
-    </Box>
-  </Box>
-);
-
-const QuickActionCard = ({ title, description, icon, color, link }) => (
-  <Button
-    component={Link}
-    to={link}
-    variant="contained"
-    sx={{
-      height: '100%',
-      p: 3,
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      borderRadius: '12px',
-      backgroundColor: color,
-      color: 'white',
-      textAlign: 'center',
-      transition: 'transform 0.3s ease',
-      '&:hover': {
-        transform: 'scale(1.03)',
-        backgroundColor: color,
-      }
-    }}
-  >
-    {React.cloneElement(icon, { sx: { fontSize: '2.5rem', mb: 2 } })}
-    <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
-      {title}
-    </Typography>
-    <Typography variant="body2">
-      {description}
-    </Typography>
-  </Button>
-);
 
 export default Home;
