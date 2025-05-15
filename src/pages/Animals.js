@@ -19,10 +19,10 @@ import {
   Avatar,
   useTheme,
   Button,
+  MenuItem,
 } from '@mui/material';
-import { Link } from 'react-router-dom';
+import { Link, useParams, useNavigate } from 'react-router-dom';
 import {
-  Search as SearchIcon,
   Edit as EditIcon,
   Visibility as VisibilityIcon,
   Delete as DeleteIcon,
@@ -137,14 +137,6 @@ const AnimalCard = ({ animal, onDelete, showOwner }) => {
             <VisibilityIcon />
           </IconButton>
           <IconButton
-            component={Link}
-            to={`/animals/${animal.id}/edit`}
-            color="secondary"
-            size="small"
-          >
-            <EditIcon />
-          </IconButton>
-          <IconButton
             onClick={handleDeleteClick}
             color="error"
             size="small"
@@ -176,6 +168,8 @@ const AnimalCard = ({ animal, onDelete, showOwner }) => {
 };
 
 const Animals = () => {
+  const { id } = useParams();
+  const navigate = useNavigate();
   const [animals, setAnimals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -186,6 +180,19 @@ const Animals = () => {
   const { user } = useAuth();
   const [typeFilter, setTypeFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [selectedAnimal, setSelectedAnimal] = useState(null);
+  const [formData, setFormData] = useState({
+    name: '',
+    type: '',
+    breed: '',
+    birthDate: '',
+    status: '',
+    weight: '',
+    microchipNumber: '',
+    ownerName: '',
+    ownerContact: ''
+  });
 
   useEffect(() => {
     const loadAnimals = async () => {
@@ -194,6 +201,29 @@ const Animals = () => {
         setError(null);
         const data = await fetchAnimals(searchParams);
         setAnimals(Array.isArray(data) ? data : []);
+        
+        // If we have an ID in the URL, find and select that animal
+        if (id) {
+          const animal = data.find(a => a.id === parseInt(id));
+          if (animal) {
+            setSelectedAnimal(animal);
+            setFormData({
+              name: animal.name || '',
+              type: animal.type || '',
+              breed: animal.breed || '',
+              birthDate: animal.birthDate?.split('T')[0] || '',
+              status: animal.status || '',
+              weight: animal.weight || '',
+              microchipNumber: animal.microchipNumber || '',
+              ownerName: animal.ownerName || '',
+              ownerContact: animal.ownerContact || ''
+            });
+            setEditDialogOpen(true);
+          } else {
+            setError('Animal not found');
+            navigate('/animals');
+          }
+        }
       } catch (error) {
         console.error('Failed to fetch animals:', error);
         setError('Failed to load animals. Please try again later.');
@@ -203,7 +233,7 @@ const Animals = () => {
       }
     };
     loadAnimals();
-  }, [searchParams]);
+  }, [searchParams, id, navigate]);
 
   const handleFilter = () => {
     setPage(1);
@@ -230,6 +260,80 @@ const Animals = () => {
     } catch (error) {
       console.error('Failed to delete animal:', error);
       setError('Failed to delete animal. Please try again.');
+    }
+  };
+
+  const handleEditClick = (animal) => {
+    setSelectedAnimal(animal);
+    setFormData({
+      name: animal.name || '',
+      type: animal.type || '',
+      breed: animal.breed || '',
+      birthDate: animal.birthDate?.split('T')[0] || '',
+      status: animal.status || '',
+      weight: animal.weight || '',
+      microchipNumber: animal.microchipNumber || '',
+      ownerName: animal.ownerName || '',
+      ownerContact: animal.ownerContact || ''
+    });
+    setEditDialogOpen(true);
+    // Update URL when opening dialog
+    navigate(`/animals/${animal.id}/edit`);
+  };
+
+  const handleEditClose = () => {
+    setEditDialogOpen(false);
+    setSelectedAnimal(null);
+    setFormData({
+      name: '',
+      type: '',
+      breed: '',
+      birthDate: '',
+      status: '',
+      weight: '',
+      microchipNumber: '',
+      ownerName: '',
+      ownerContact: ''
+    });
+    // Clear URL when closing dialog
+    navigate('/animals');
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleEditSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      setLoading(true);
+      const response = await fetch(`/api/animals/${selectedAnimal.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify(formData)
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update animal');
+      }
+
+      const updatedAnimal = await response.json();
+      setAnimals(animals.map(animal => 
+        animal.id === selectedAnimal.id ? updatedAnimal : animal
+      ));
+      handleEditClose();
+    } catch (error) {
+      console.error('Failed to update animal:', error);
+      setError('Failed to update animal. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -309,6 +413,147 @@ const Animals = () => {
         <Typography sx={{ mt: 1 }}>{page} / {totalPages || 1}</Typography>
         <Button onClick={() => setPage(page + 1)} disabled={page === totalPages || totalPages === 0} sx={{ ml: 2 }}>Next</Button>
       </Box>
+
+      <Dialog 
+        open={editDialogOpen} 
+        onClose={handleEditClose} 
+        maxWidth="sm" 
+        fullWidth
+        // Prevent closing by clicking outside when accessed via URL
+        disableBackdropClick={!!id}
+      >
+        <DialogTitle>
+          {selectedAnimal ? `Edit ${selectedAnimal.name}` : 'Edit Animal'}
+        </DialogTitle>
+        <DialogContent>
+          {loading ? (
+            <Box display="flex" justifyContent="center" p={3}>
+              <CircularProgress />
+            </Box>
+          ) : error ? (
+            <Box p={3}>
+              <Typography color="error">{error}</Typography>
+            </Box>
+          ) : (
+            <form onSubmit={handleEditSubmit}>
+              <Grid container spacing={2} sx={{ mt: 1 }}>
+                <Grid item xs={12}>
+                  <TextField
+                    fullWidth
+                    label="Name"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleInputChange}
+                    required
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    select
+                    label="Type"
+                    name="type"
+                    value={formData.type}
+                    onChange={handleInputChange}
+                    required
+                  >
+                    <MenuItem value="Dog">Dog</MenuItem>
+                    <MenuItem value="Cat">Cat</MenuItem>
+                    <MenuItem value="Bird">Bird</MenuItem>
+                    <MenuItem value="Rabbit">Rabbit</MenuItem>
+                    <MenuItem value="Other">Other</MenuItem>
+                  </TextField>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    label="Breed"
+                    name="breed"
+                    value={formData.breed}
+                    onChange={handleInputChange}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    label="Birth Date"
+                    name="birthDate"
+                    type="date"
+                    value={formData.birthDate}
+                    onChange={handleInputChange}
+                    InputLabelProps={{ shrink: true }}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    label="Weight"
+                    name="weight"
+                    type="number"
+                    value={formData.weight}
+                    onChange={handleInputChange}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    select
+                    label="Status"
+                    name="status"
+                    value={formData.status}
+                    onChange={handleInputChange}
+                    required
+                  >
+                    <MenuItem value="Healthy">Healthy</MenuItem>
+                    <MenuItem value="Recovering">Recovering</MenuItem>
+                    <MenuItem value="In Treatment">In Treatment</MenuItem>
+                    <MenuItem value="Chronic Condition">Chronic Condition</MenuItem>
+                  </TextField>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    label="Microchip Number"
+                    name="microchipNumber"
+                    value={formData.microchipNumber}
+                    onChange={handleInputChange}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    label="Owner Name"
+                    name="ownerName"
+                    value={formData.ownerName}
+                    onChange={handleInputChange}
+                    required
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    label="Owner Contact"
+                    name="ownerContact"
+                    value={formData.ownerContact}
+                    onChange={handleInputChange}
+                    required
+                  />
+                </Grid>
+              </Grid>
+              <Box display="flex" justifyContent="flex-end" gap={2} mt={3}>
+                <Button onClick={handleEditClose}>Cancel</Button>
+                <Button
+                  type="submit"
+                  variant="contained"
+                  disabled={loading}
+                >
+                  {loading ? <CircularProgress size={24} /> : 'Save Changes'}
+                </Button>
+              </Box>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
     </Container>
   );
 };

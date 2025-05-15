@@ -1,77 +1,61 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Box, Button, Container, TextField, Typography, Alert } from '@mui/material';
-import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
+import './Login.css';
 
 const Login = () => {
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState(null);
+  const [error, setError] = useState('');
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, isLoading } = useAuth();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError(null);
+    setError('');
+
     try {
-      const formData = new URLSearchParams();
-      formData.append('username', username);
-      formData.append('password', password);
-      await axios.post(
-        'http://localhost:5006/api/auth/login',
-        formData,
-        {
-          withCredentials: true,
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
-        }
-      );
-      // Fetch user info after login
-      const userRes = await axios.get('http://localhost:5006/api/auth/me', { withCredentials: true });
-      login(userRes.data);
+      await login({ email, password });
+      // If login is successful, navigate to home
       navigate('/');
     } catch (err) {
-      setError('Invalid username or password');
+      console.error('Login error:', err);
+      setError(err.response?.data?.message || 'Login failed. Please try again.');
     }
   };
 
   return (
-    <Container maxWidth="xs">
-      <Box sx={{ mt: 8, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-        <Typography component="h1" variant="h5">
-          Login
-        </Typography>
-        <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1 }}>
-          <TextField
-            margin="normal"
+    <div className="login-container">
+      <form onSubmit={handleSubmit} className="login-form">
+        <h2>Login</h2>
+        {error && <div className="error-message">{error}</div>}
+        <div className="form-group">
+          <label htmlFor="email">Email:</label>
+          <input
+            type="email"
+            id="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
             required
-            fullWidth
-            label="Username"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            autoFocus
+            disabled={isLoading}
           />
-          <TextField
-            margin="normal"
-            required
-            fullWidth
-            label="Password"
+        </div>
+        <div className="form-group">
+          <label htmlFor="password">Password:</label>
+          <input
             type="password"
+            id="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            required
+            disabled={isLoading}
           />
-          {error && <Alert severity="error">{error}</Alert>}
-          <Button
-            type="submit"
-            fullWidth
-            variant="contained"
-            sx={{ mt: 3, mb: 2 }}
-          >
-            Sign In
-          </Button>
-        </Box>
-      </Box>
-    </Container>
+        </div>
+        <button type="submit" disabled={isLoading}>
+          {isLoading ? 'Logging in...' : 'Login'}
+        </button>
+      </form>
+    </div>
   );
 };
 

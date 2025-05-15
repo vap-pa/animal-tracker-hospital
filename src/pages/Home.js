@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Box, Container, Typography, Button, Grid, Paper, CircularProgress, 
-  useTheme, Avatar, Divider, Chip, LinearProgress, Table, TableBody, 
-  TableCell, TableContainer, TableRow, Card, CardContent, CardMedia,
-  useMediaQuery
+  Box, Container, Typography, Button, Grid, CircularProgress, 
+  useTheme, Avatar, Chip, Card, CardContent, CardMedia
 } from '@mui/material';
 import { Link } from 'react-router-dom';
 import {
@@ -11,13 +9,6 @@ import {
   MedicalServices as MedicalServicesIcon,
   Schedule as ScheduleIcon,
   People as PeopleIcon,
-  Event as EventIcon,
-  LocalHospital as HospitalIcon,
-  Assignment as ReportIcon,
-  BarChart as ChartIcon,
-  Favorite as FavoriteIcon,
-  Warning as WarningIcon,
-  CheckCircle as CheckCircleIcon,
   TrendingUp as TrendingUpIcon,
   Emergency as EmergencyIcon,
 } from '@mui/icons-material';
@@ -35,8 +26,6 @@ import animalTrackingImg from '../assets/animal-tracking.jpg';
 import medicalRecordsImg from '../assets/medical-records.jpg';
 import appointmentsImg from '../assets/appointments.jpg';
 import staffImg from '../assets/staff.jpg';
-import reportImg from '../assets/reports-analytics.jpg';
-import emergencyImg from '../assets/emergency-cases.jpg';
 
 const StatisticCard = ({ title, value, icon, color, trend }) => (
   <Card sx={{ 
@@ -144,16 +133,7 @@ const FeatureCard = ({ icon, image, title, description, link, color }) => (
 const Home = () => {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [recentActivities, setRecentActivities] = useState([]);
-  const [upcomingTasks, setUpcomingTasks] = useState([]);
-  const [animalStatus, setAnimalStatus] = useState({
-    healthy: 0,
-    underObservation: 0,
-    critical: 0,
-    healthyPercentage: 0
-  });
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const { user } = useAuth();
 
   useEffect(() => {
@@ -189,34 +169,13 @@ const Home = () => {
           criticalCases: criticalCount,
           healthyPercentage
         });
-
-        // Mock data for recent activities and tasks
-        const mockRecentActivities = [
-          { type: 'Medical', description: 'Annual checkup for Max', time: '2 hours ago', animal: 'Max (Dog)' },
-          { type: 'Appointment', description: 'Vaccination scheduled', time: '4 hours ago', animal: 'Bella (Cat)' },
-          { type: 'Animal', description: 'New animal registered', time: '1 day ago', animal: 'Rocky (Rabbit)' },
-        ];
-
-        const mockUpcomingTasks = [
-          { description: 'Follow-up for Luna', dueDate: 'Tomorrow', priority: 'Medium' },
-          { description: 'Inventory check', dueDate: 'In 2 days', priority: 'Low' },
-          { description: 'Monthly report', dueDate: 'End of week', priority: 'High' },
-        ];
-
-        setRecentActivities(mockRecentActivities);
-        setUpcomingTasks(mockUpcomingTasks);
-        setAnimalStatus({
-          healthy: healthyCount,
-          underObservation: observationCount,
-          critical: criticalCount,
-          healthyPercentage
-        });
       } catch (error) {
-        console.error('Failed to load dashboard data:', error);
+        console.error('Error loading data:', error);
       } finally {
         setLoading(false);
       }
     };
+
     loadData();
   }, []);
 

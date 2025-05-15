@@ -27,12 +27,15 @@ import EventIcon from '@mui/icons-material/Event';
 import PetsIcon from '@mui/icons-material/Pets';
 import MedicalServicesIcon from '@mui/icons-material/MedicalServices';
 import PeopleIcon from '@mui/icons-material/People';
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import {
   fetchAnimals,
   fetchAppointments,
   fetchMedicalRecords,
   fetchStaff,
 } from '../services/api';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 
 ChartJS.register(
   CategoryScale,
@@ -168,6 +171,74 @@ const Reports = () => {
     loadData();
   }, [reportType, timeRange]);
 
+  const handleExportReport = async () => {
+    const doc = new jsPDF();
+    
+    // Add title
+    doc.setFontSize(20);
+    doc.text('Animal Hospital Report', 14, 15);
+    
+    // Add report type and time range
+    doc.setFontSize(12);
+    doc.text(`Report Type: ${reportType.charAt(0).toUpperCase() + reportType.slice(1)}`, 14, 25);
+    doc.text(`Time Range: ${timeRange.charAt(0).toUpperCase() + timeRange.slice(1)}`, 14, 32);
+    
+    // Add statistics
+    doc.setFontSize(14);
+    doc.text('Statistics', 14, 45);
+    doc.setFontSize(12);
+    doc.text(`Total Animals: ${stats.animals}`, 14, 55);
+    doc.text(`Total Appointments: ${stats.appointments}`, 14, 62);
+    doc.text(`Total Procedures: ${stats.procedures}`, 14, 69);
+    doc.text(`Total Staff: ${stats.staff}`, 14, 76);
+
+    let yOffset = 90;
+
+    // Add animal types chart
+    if (animalTypesData) {
+      doc.setFontSize(14);
+      doc.text('Animal Types Distribution', 14, yOffset);
+      
+      // Get the canvas element for the pie chart
+      const pieChartCanvas = document.querySelector('canvas');
+      if (pieChartCanvas) {
+        const pieChartImage = pieChartCanvas.toDataURL('image/png');
+        doc.addImage(pieChartImage, 'PNG', 14, yOffset + 10, 180, 100);
+        yOffset += 120;
+      }
+    }
+
+    // Add monthly appointments chart
+    if (monthlyAppointmentsData) {
+      doc.setFontSize(14);
+      doc.text('Monthly Appointments', 14, yOffset);
+      
+      // Get the canvas element for the bar chart
+      const barChartCanvas = document.querySelectorAll('canvas')[1];
+      if (barChartCanvas) {
+        const barChartImage = barChartCanvas.toDataURL('image/png');
+        doc.addImage(barChartImage, 'PNG', 14, yOffset + 10, 180, 100);
+        yOffset += 120;
+      }
+    }
+
+    // Add procedure types chart
+    if (procedureTypesData) {
+      doc.setFontSize(14);
+      doc.text('Procedure Types', 14, yOffset);
+      
+      // Get the canvas element for the procedure chart
+      const procedureChartCanvas = document.querySelectorAll('canvas')[2];
+      if (procedureChartCanvas) {
+        const procedureChartImage = procedureChartCanvas.toDataURL('image/png');
+        doc.addImage(procedureChartImage, 'PNG', 14, yOffset + 10, 180, 100);
+      }
+    }
+
+    // Save the PDF
+    doc.save(`animal-hospital-report-${reportType}-${timeRange}.pdf`);
+  };
+
   if (loading) {
     return (
       <Container maxWidth="lg">
@@ -215,7 +286,12 @@ const Reports = () => {
             </FormControl>
           </Box>
 
-          <Button variant="contained" color="primary">
+          <Button 
+            variant="contained" 
+            color="primary"
+            startIcon={<FileDownloadIcon />}
+            onClick={handleExportReport}
+          >
             Export Report
           </Button>
         </Box>

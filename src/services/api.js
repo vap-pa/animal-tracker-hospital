@@ -7,7 +7,90 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  withCredentials: true // Enable sending cookies
 });
+
+// Add a request interceptor to add the auth token to requests
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('accessToken');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// Add a response interceptor to handle 401 errors and token refresh
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
+    
+    // If the error is 401 and we haven't tried to refresh the token yet
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+      
+      try {
+        // Try to refresh the token
+        const response = await api.post('/auth/refresh');
+        const newAccessToken = response.data.accessToken;
+        
+        // Store the new access token
+        localStorage.setItem('accessToken', newAccessToken);
+        
+        // Retry the original request with the new token
+        originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+        return api(originalRequest);
+      } catch (refreshError) {
+        // If refresh fails, redirect to login
+        window.location.href = '/login';
+        return Promise.reject(refreshError);
+      }
+    }
+    
+    return Promise.reject(error);
+  }
+);
+
+// Auth API
+export const login = async (credentials) => {
+  try {
+    const response = await api.post('/auth/login', credentials);
+    const { accessToken } = response.data;
+    localStorage.setItem('accessToken', accessToken);
+    return response.data;
+  } catch (error) {
+    console.error('Error logging in:', error);
+    throw error;
+  }
+};
+
+export const register = async (userData) => {
+  try {
+    const response = await api.post('/auth/register', userData);
+    const { accessToken } = response.data;
+    localStorage.setItem('accessToken', accessToken);
+    return response.data;
+  } catch (error) {
+    console.error('Error registering:', error);
+    throw error;
+  }
+};
+
+export const logout = async () => {
+  try {
+    await api.post('/auth/logout');
+  } catch (error) {
+    console.error('Error logging out:', error);
+  } finally {
+    localStorage.removeItem('accessToken');
+    window.location.href = '/login';
+  }
+};
 
 // Animals API
 export const fetchAnimals = async (params = {}) => {
@@ -120,6 +203,7 @@ export const fetchMedicalRecords = async (params = {}) => {
     throw error;
   }
 };
+
 export const fetchMedicalRecordById = async (id) => {
   try {
     const response = await api.get(`/medical-records/${id}`);
@@ -165,6 +249,16 @@ export const deleteMedicalRecord = async (id) => {
     await api.delete(`/medical-records/${id}`);
   } catch (error) {
     console.error('Error deleting medical record:', error);
+    throw error;
+  }
+};
+
+export const fetchMedicalRecord = async (id) => {
+  try {
+    const response = await api.get(`/medical-records/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching medical record:', error);
     throw error;
   }
 };
